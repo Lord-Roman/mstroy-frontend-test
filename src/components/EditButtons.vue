@@ -2,8 +2,8 @@
   <div class="container">
     <span class="title">{{ title }}</span>
     <div class="buttons" v-if="isEdit">
-      <button class="button button_blue" @click="OnAddItem">+</button>
-      <button class="button button_red" @click="OnRemoveItem">+</button>
+      <button class="button button_blue" @click="onAddItem">+</button>
+      <button class="button button_red" @click="onRemoveItem">+</button>
     </div>
   </div>
 </template>
@@ -14,15 +14,15 @@ import { computed } from "vue";
 interface RendererParams {
   title: string;
   isEdit: () => boolean;
-  OnAddItem: () => void;
-  OnRemoveItem: () => void;
+  onAddItem: () => void;
+  onRemoveItem: () => void;
 }
 
 const props = defineProps<{
   params: RendererParams;
 }>();
 
-const { title, OnAddItem, OnRemoveItem } = props.params;
+const { title, onAddItem, onRemoveItem } = props.params;
 
 const isEdit = computed(() => props.params.isEdit());
 </script>
@@ -40,6 +40,8 @@ const isEdit = computed(() => props.params.isEdit());
 
 .buttons {
   display: flex;
+  padding-inline: 12px;
+  height: 100%;
 }
 
 .buttons button {
@@ -50,9 +52,11 @@ const isEdit = computed(() => props.params.isEdit());
   color: white;
   margin-right: 8px;
   font-size: 24px;
-  text-align: center;
   line-height: 24px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .button_blue {

@@ -1,10 +1,4 @@
-export type guid = string | number;
-
-interface ITreeItem {
-  id: guid;
-  parent: string | number | null;
-  [key: string]: any;
-}
+import type { guid, ITreeItem } from "./types";
 
 interface IFullTreeItem extends ITreeItem {
   children: guid[]; // Массив id всех детей
@@ -36,8 +30,8 @@ export class TreeStore {
   }
 
   getAll() {
-    //Возвращает изначальный массив элементов.
     return Array.from(this.items.values()).map(({ children, ...rest }) => rest);
+    //Возвращает изначальный массив элементов.
   }
 
   getItem(id: guid): ITreeItem | undefined {
@@ -117,14 +111,27 @@ export class TreeStore {
     if (item.parent) {
       this.items.get(item.parent)?.children.push(item.id);
     }
-    return item;
     // Принимает объект нового элемента и добавляет его в общую
     // структуру хранилища.
   }
 
   removeItem(id: guid): void {
-    this.getAllChildren(id).forEach((child) => this.items.delete(child.id));
+    if (!this.items.has(id)) {
+      return;
+    }
+    this.getAllChildren(id).forEach((child) => this.removeItem(child.id));
+    const parentId = this.items.get(id)?.parent;
     this.items.delete(id);
+
+    if (parentId) {
+      const index = this.items
+        .get(parentId)
+        ?.children.findIndex((item) => item === id);
+      this.items.get(parentId)?.children.splice(1, index);
+    }
+
+    // Принимает id элемента и удаляет соответствующий элемент и
+    // все его дочерние элементы из хранилища
   }
 
   updateItem(item: ITreeItem) {

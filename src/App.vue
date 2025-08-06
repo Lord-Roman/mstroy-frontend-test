@@ -1,10 +1,27 @@
 <template>
   <div>
-    <div class="controls" @click="changeMode">
-      <span class="controls__changer"> режим: {{ mode }} </span>
+    <div class="controls">
+      <span class="controls__changer" @click="changeMode">
+        Режим: {{ mode }}
+      </span>
+      <div class="history" v-if="isEdit">
+        <img
+          class="history__button history__button_undo"
+          :class="{ history__button_opacity: !canUndo }"
+          src="./assets/images/undo-svgrepo-com.svg"
+          alt="undo"
+          @click="undo"
+        />
+        <img
+          class="history__button history__button_redo"
+          :class="{ history__button_opacity: !canRedo }"
+          src="./assets/images/redo-svgrepo-com.svg"
+          alt="redo"
+          @click="redo"
+        />
+      </div>
     </div>
     <ag-grid-vue
-      :theme="myTheme"
       :rowData="tree.getAll()"
       :columnDefs
       :treeData="true"
@@ -12,7 +29,7 @@
       :getRowId="getRowId"
       :autoGroupColumnDef="autoGroupColumn"
       :groupDefaultExpanded="-1"
-      @cell-value-changed="OnCellValueChanged"
+      @cell-value-changed="onCellValueChanged"
       style="height: calc(100vh - 64px)"
     >
     </ag-grid-vue>
@@ -25,15 +42,14 @@ import { AgGridVue } from "ag-grid-vue3"; // Vue Grid Logic
 
 import {
   AllEnterpriseModule,
-  colorSchemeDarkWarm,
   LicenseManager,
   ModuleRegistry,
-  themeQuartz,
   type CellValueChangedEvent,
 } from "ag-grid-enterprise";
 import { computed, ref } from "vue";
-import { TreeStore, type guid } from "./lib/treeStore";
+import { UndoableTreeStore } from "./lib/UndoableTreeStore";
 import EditButtons from "./components/EditButtons.vue";
+import type { guid } from "./lib/types";
 ModuleRegistry.registerModules([AllEnterpriseModule]);
 LicenseManager.setLicenseKey(
   "[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-090576}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{31 August 2025}____[v3]_[0102]_MTc1NjU5NDgwMDAwMA==055771d37eabf862ce4b35dbb0d2a1df"
@@ -65,10 +81,10 @@ const items = [
   { id: 7, parent: 4, label: "Айтем 7" },
   { id: 8, parent: 4, label: "Айтем 8" },
 ];
-const tree = ref(new TreeStore(items));
+const tree = ref(new UndoableTreeStore(items));
 const isEdit = ref(true);
 
-const mode = computed(() => (isEdit.value ? "редактироватия" : "просмотра"));
+const mode = computed(() => (isEdit.value ? "редактирования" : "просмотра"));
 const changeMode = () => {
   isEdit.value = !isEdit.value;
 };
@@ -82,8 +98,8 @@ const autoGroupColumn = {
     innerRenderer: EditButtons,
     title: getCategory(params.node.data.id) ? "Группа" : "Элемент",
     isEdit: () => isEdit.value,
-    OnAddItem: () => OnAddItem(params.data?.id),
-    OnRemoveItem: () => OnRemoveItem(params.data?.id),
+    onAddItem: () => onAddItem(params.data?.id),
+    onRemoveItem: () => onRemoveItem(params.data?.id),
     suppressCount: true,
   }),
   valueGetter: (params: any) =>
@@ -111,26 +127,36 @@ const columnDefs = computed(() => {
   ];
 });
 
-function OnAddItem(id: guid) {
+function onAddItem(id: guid) {
   const guid = id.toString() + Date.now().toString();
   tree.value.addItem({ id: guid, parent: id, label: "" });
-  AddToHistory();
 }
 
-function OnRemoveItem(id: guid) {
+function onRemoveItem(id: guid) {
   tree.value.removeItem(id);
-  AddToHistory();
 }
 
-function OnCellValueChanged(event: CellValueChangedEvent) {
+function onCellValueChanged(event: CellValueChangedEvent) {
   tree.value.updateItem(event.data);
-  AddToHistory();
 }
 
-function AddToHistory() {
-  console.log("AddedToHistory");
+const canUndo = computed(() => {
+  return tree.value.canUndo();
+});
+
+const canRedo = computed(() => {
+  return tree.value.canRedo();
+});
+
+function undo() {
+  tree.value.undo();
 }
-const myTheme = themeQuartz.withPart(colorSchemeDarkWarm);
+
+function redo() {
+  tree.value.redo();
+}
+
+// const myTheme = themeQuartz.withPart(colorSchemeDarkWarm);
 </script>
 <style scoped>
 .controls {
@@ -144,5 +170,25 @@ const myTheme = themeQuartz.withPart(colorSchemeDarkWarm);
 
 .controls__changer {
   cursor: pointer;
+}
+.history {
+  display: flex;
+}
+.history__button {
+  width: 20px;
+  color: #488dda;
+  fill: #488dda;
+  cursor: pointer;
+}
+
+.history__button_opacity {
+  opacity: 0.5;
+}
+
+.history__button_undo {
+  padding: 10px 5px 10px 10px;
+}
+.history__button_redo {
+  padding: 10px 10px 10px 5px;
 }
 </style>
