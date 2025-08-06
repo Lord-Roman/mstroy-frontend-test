@@ -82,7 +82,7 @@ const items = [
   { id: 8, parent: 4, label: "Айтем 8" },
 ];
 const tree = ref(new UndoableTreeStore(items));
-const isEdit = ref(true);
+const isEdit = ref(false);
 
 const mode = computed(() => (isEdit.value ? "редактирования" : "просмотра"));
 const changeMode = () => {
