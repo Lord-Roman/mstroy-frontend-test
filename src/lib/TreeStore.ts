@@ -5,7 +5,7 @@ interface IFullTreeItem extends ITreeItem {
 }
 
 export class TreeStore {
-  items: Map<guid, IFullTreeItem> = new Map();
+  private items: Map<guid, IFullTreeItem> = new Map();
 
   constructor(tree: ITreeItem[]) {
     const children: Map<guid, guid[]> = new Map();
@@ -18,12 +18,14 @@ export class TreeStore {
 
       const parentId = item.parent;
       if (parentId) {
+        // Если вообще есть id родителя.
         if (this.items.has(parentId)) {
-          this.items.get(parentId)!.children.push(item.id);
+          // Если родитель уже добавлен
+          this.items.get(parentId)!.children.push(item.id); // добавляем родителю ещё ребёнка
         } else {
           children.has(parentId)
-            ? children.get(parentId)?.push(item.id)
-            : children.set(parentId, []);
+            ? children.get(parentId)?.push(item.id) // добавляем в существующий массив ребёнка
+            : children.set(parentId, [item.id]); // создаём массив и добавляем ребёнка
         }
       }
     });
