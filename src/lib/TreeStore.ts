@@ -8,6 +8,10 @@ export class TreeStore {
   private items: Map<guid, IFullTreeItem> = new Map();
 
   constructor(tree: ITreeItem[]) {
+    this.addItems(tree);
+  }
+
+  addItems(tree: ITreeItem[]) {
     const children: Map<guid, guid[]> = new Map();
     tree.forEach((item: ITreeItem) => {
       this.items.set(item.id, {
@@ -129,7 +133,8 @@ export class TreeStore {
       const index = this.items
         .get(parentId)
         ?.children.findIndex((item) => item === id);
-      this.items.get(parentId)?.children.splice(1, index);
+      if (!index) return;
+      this.items.get(parentId)?.children.splice(index, 1);
     }
 
     // Принимает id элемента и удаляет соответствующий элемент и

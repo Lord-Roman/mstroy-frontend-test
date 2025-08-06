@@ -5,17 +5,29 @@ type ActionType = "add" | "remove" | "update";
 
 interface Action {
   type: ActionType;
-  item: ITreeItem; // для add/remove/update - объект, который добавляли/удаляли/обновляли
-  previousItem?: ITreeItem; // для update - предыдущая версия объекта
+  item: ITreeItem;
+  previousItem?: ITreeItem;
 }
 
 export class UndoableTreeStore extends TreeStore {
   private undoStack: Action[] = [];
   private redoStack: Action[] = [];
 
+  constructor(items: ITreeItem[]) {
+    super(items);
+  }
+
   addItem(item: ITreeItem) {
     super.addItem(item);
     this.undoStack.push({ type: "add", item });
+    this.redoStack = [];
+  }
+
+  addItemsWithUndo(items: ITreeItem[]) {
+    items.forEach((item) => {
+      super.addItem(item);
+      this.undoStack.push({ type: "add", item });
+    });
     this.redoStack = [];
   }
 
@@ -24,13 +36,18 @@ export class UndoableTreeStore extends TreeStore {
     if (!removedItem) return;
 
     const allChildren = this.getAllChildren(id);
-    const removedItems = [removedItem, ...allChildren];
 
     super.removeItem(id);
 
-    removedItems.forEach((item) => {
-      this.undoStack.push({ type: "remove", item });
+    this.undoStack.push({
+      type: "remove",
+      item: removedItem,
+      previousItem: {
+        ...removedItem,
+        children: allChildren.map((c) => c.id),
+      } as ITreeItem, // если нужно восстановление
     });
+
     this.redoStack = [];
   }
 
@@ -88,10 +105,14 @@ export class UndoableTreeStore extends TreeStore {
         super.removeItem(action.item.id);
         break;
       case "remove":
-        super.addItem(action.item);
+        if (action.previousItem) {
+          super.addItem(action.previousItem);
+        }
         break;
       case "update":
-        if (action.previousItem) super.updateItem(action.previousItem);
+        if (action.previousItem) {
+          super.updateItem(action.previousItem);
+        }
         break;
     }
   }
